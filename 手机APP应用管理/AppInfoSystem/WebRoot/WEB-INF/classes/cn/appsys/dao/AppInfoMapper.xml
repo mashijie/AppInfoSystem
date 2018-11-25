@@ -5,8 +5,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
 <mapper namespace="cn.appsys.dao.AppInfoMapper">
 	<select id="getAppInfo" resultType="AppInfo">
-		SELECT `softwareName`,`APKName`,`softwareSize`,
-		(SELECT valueName FROM
+		SELECT `id`,`softwareName`,`APKName`,`softwareSize`,
+		(SELECT valueName
+		FROM
 		`data_dictionary` d WHERE a.flatformId=d.valueId AND
 		d.typeCode='APP_FLATFORM') AS flatformName,
 		(SELECT categoryName FROM
@@ -107,9 +108,41 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 	<update id="upStatus">
 		UPDATE app_info
 		SET `status`=4
-		WHERE `APKName`=#{APKName}
+		WHERE
+		`APKName`=#{APKName}
 	</update>
 
+	<select id="getAppInfoByIdOrAPKName" resultType="AppInfo">
+		SELECT `id`,`softwareName`,`APKName`,`softwareSize`,
+		(SELECT valueName
+		FROM
+		`data_dictionary` d WHERE a.flatformId=d.valueId AND
+		d.typeCode='APP_FLATFORM') AS flatformName,
+		(SELECT categoryName FROM
+		`app_category` c WHERE a.categoryLevel1=c.id) AS
+		categoryLevel1Name,
+		(SELECT categoryName FROM `app_category` c WHERE
+		a.categoryLevel2=c.id) AS
+		categoryLevel2Name,
+		(SELECT categoryName FROM
+		`app_category` c WHERE a.categoryLevel3=c.id) AS
+		categoryLevel3Name,
+		(SELECT valueName FROM `data_dictionary` d WHERE a.status=d.valueId
+		AND
+		d.typeCode='APP_STATUS') AS statusName,
+		a.downloads,
+		(SELECT
+		versionNo FROM `app_version` v WHERE v.id=a.versionId) AS
+		versionNo,a.`status`
+		FROM `app_info` a where 1=1
+		<if test="id !=null">
+			and `id`=#{id}
+		</if>
+		<if test="APKName !=null">
+			and `APKName`=#{APKName}
+		</if>
+
+	</select>
 
 
 </mapper>

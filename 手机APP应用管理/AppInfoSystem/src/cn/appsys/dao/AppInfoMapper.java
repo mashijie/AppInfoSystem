@@ -25,7 +25,8 @@ public interface AppInfoMapper {
 	
 	//上架App
 	public Integer upStatus(@Param("APKName")String APKName);
-	
+	//根据id或者APKName获取具体AppInfo
+	public AppInfo getAppInfoByIdOrAPKName(@Param("id")Integer id,@Param("APKName")String APKName);
 	
 	
 	

@@ -46,4 +46,10 @@ public class AppInfoServiceImpl implements AppInfoService {
 
 	}
 
+	//查找用户
+	@Override
+	public AppInfo getAppInfoByIdOrAPKName(Integer id, String APKName) {
+		return appInfoMapper.getAppInfoByIdOrAPKName(id, APKName);
+	}
+
 }

@@ -19,7 +19,7 @@ public interface AppInfoService {
 	
 	 Integer addAppInfo(AppInfo appInfo);
 	 
-	 public Integer upStatus(String APKName);
+	 Integer upStatus(String APKName);
 	
-	
+	 AppInfo getAppInfoByIdOrAPKName(Integer id,String APKName);
 }

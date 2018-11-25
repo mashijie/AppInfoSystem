@@ -7,19 +7,25 @@ import java.util.List;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpSession;
 
 import org.apache.commons.io.FilenameUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpRequest;
 import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.sun.corba.se.spi.orbutil.fsm.Guard.Result;
 
 import cn.appsys.pojo.AppCategory;
 import cn.appsys.pojo.AppInfo;
+import cn.appsys.pojo.AppVersion;
 import cn.appsys.pojo.DataDictionary;
 import cn.appsys.pojo.DevUser;
 import cn.appsys.service.AppCategoryService;
@@ -27,21 +33,23 @@ import cn.appsys.service.AppInfoService;
 import cn.appsys.service.DataDictionaryService;
 import cn.appsys.service.impl.AppCategoryServiceImpl;
 import cn.appsys.service.impl.AppInfoServiceImpl;
+import cn.appsys.service.impl.AppVersionServiceImpl;
 import cn.appsys.service.impl.DataDictionaryServiceImpl;
 import cn.appsys.tools.Constants;
 import cn.appsys.tools.PageSupport;
 
-
 @Controller
 @RequestMapping("dev/flatform/app")
 public class AppController {
-	
+
 	@Resource
 	DataDictionaryService dataDictionaryService;
 	@Resource
 	AppInfoService appInfoService;
 	@Resource
 	AppCategoryService appCategoryService;
+	@Resource
+	AppVersionServiceImpl appVersionServiceImpl;
 	
 	/**
 	 * 查询列表
@@ -119,14 +127,13 @@ public class AppController {
 		request.getSession().setAttribute("queryFlatformId", _queryFlatformId);
 		// 将一级分类信息设置为初始状态，后续使用ajax技术支持
 		request.getSession().setAttribute("queryCategoryLevel1", "0");
-		
+
 		for (AppInfo appinfo : appinfoList) {
 			System.out.println(appinfo.getSoftwareName());
 		}
-		
+
 		return "developer/appinfolist";
-		
-		
+
 	}
 
 	/**
@@ -173,7 +180,6 @@ public class AppController {
 		return result;
 	}
 
-	
 	/**
 	 * App添加提交sava方法
 	 */
@@ -197,36 +203,37 @@ public class AppController {
 		if (attach.getSize() > fileSize) {
 			request.setAttribute("fileUploadError", "上传文件大小不得超过500KB");
 			return "developer/appinfoadd";
-		} else if (prefix.equalsIgnoreCase("jpg")  //验证后缀名是否符合预期
+		} else if (prefix.equalsIgnoreCase("jpg") // 验证后缀名是否符合预期
 				|| prefix.equalsIgnoreCase("jpeg")
 				|| prefix.equalsIgnoreCase("png")
 				|| prefix.equalsIgnoreCase("pneg")) {
-			//定义文件名
-			String fileName=appinfo.getAPKName()+".jpg";
-			//定义文件 path为路径
+			// 定义文件名
+			String fileName = appinfo.getAPKName() + ".jpg";
+			// 定义文件 path为路径
 			File targetFile = new File(path, fileName);
-			//判断文件是否存在，如果不存在，执行mkdirs方法创建文件
+			// 判断文件是否存在，如果不存在，执行mkdirs方法创建文件
 			if (!targetFile.exists()) {
 				targetFile.mkdirs();
 			}
 			try {
-				//将图片输出到目标文件夹内
+				// 将图片输出到目标文件夹内
 				attach.transferTo(targetFile);
 			} catch (Exception e) {
 				e.printStackTrace();
-				request.setAttribute("fileUploadError","文件上传失败");
+				request.setAttribute("fileUploadError", "文件上传失败");
 				return "developer/appinfoadd";
 			}
-			//获取文件路径名
-			logoPicPath = request.getContextPath()
-					+ "/statics/uploadfiles/" + oldPathName;
-			//获取服务器存储文件路径名
+			// 获取文件路径名
+			logoPicPath = request.getContextPath() + "/statics/uploadfiles/"
+					+ oldPathName;
+			// 获取服务器存储文件路径名
 			logoLocPath = path + File.separator + oldPathName;
-		}else{
-			request.setAttribute("fileUploadError", "上传文件格式必须为jpg,jpeg,png,pneg格式");
+		} else {
+			request.setAttribute("fileUploadError",
+					"上传文件格式必须为jpg,jpeg,png,pneg格式");
 			return "developer/appinfoadd";
 		}
-		
+
 		// 为新建App添加作者和创建时间
 		DevUser devUser = (DevUser) request.getSession().getAttribute(
 				Constants.DEV_USER_SESSION);
@@ -235,7 +242,7 @@ public class AppController {
 		appinfo.setCreationDate(new Date());
 		appinfo.setLogoLocPath(logoLocPath);
 		appinfo.setLogoPicPath(logoPicPath);
-		if(appInfoService.addAppInfo(appinfo)!=0){
+		if (appInfoService.addAppInfo(appinfo) != 0) {
 			return "redirect:/dev/flatform/app/list";
 		}
 		request.setAttribute("fileUploadError", "上传失败");
@@ -254,4 +261,60 @@ public class AppController {
 				.getAppCategoryList(Integer.parseInt(pid));
 		return appList;
 	}
+	
+	/**
+	 * 跳转版本添加页面
+	 * 
+	 * @return
+	 */
+	@RequestMapping(value = "appversionadd",method=RequestMethod.GET)
+	public String appversionadd(@RequestParam("id") String id,HttpServletRequest request) {
+		List<AppVersion> appVersions=appVersionServiceImpl.getAppVersionList(Integer.parseInt(id));
+		AppVersion appVerSion=new AppVersion();
+		appVerSion.setAppId(Integer.parseInt(id));
+		request.setAttribute("appVersionList", appVersions);
+		request.setAttribute("appVersion",appVerSion);
+		return "developer/appversionadd";
+	}
+	
+	/**
+	 * 
+	 * 保存版本信息
+	 * @return
+	 */
+	@RequestMapping(value="addversionsave",method=RequestMethod.POST)
+	public String addversionsave(AppVersion appVersion,
+			@RequestParam("a_downloadLink") MultipartFile attach,
+			HttpServletRequest request){
+		System.out.println(appVersion.getVersionNo());
+		System.out.println(appVersion.getVersionInfo());
+		System.out.println(appVersion.getVersionSize());
+		System.out.println(appVersion.getPublishStatus());
+		System.out.println(appVersion.getAppId()+"--------------------");
+		return "";
+	}
+	
+	
+
+	@RequestMapping(value = "{appId}/sale.json")
+	@ResponseBody
+	public Object sale(@PathVariable String appid, HttpSession session) {
+		HashMap<String, Object> result = new HashMap<String, Object>();
+		Integer appId = 0;
+		try {
+			appId = Integer.parseInt(appid);
+		} catch (Exception e) {
+			appId = 0;
+		}
+		result.put("errorCode", "0");
+		result.put("appId", appid);
+		if (appId > 0) {
+
+		} else {
+			result.put("errorCode", "param000001");
+		}
+
+		return result;
+	}
+
 }

@@ -175,9 +175,7 @@
 										<td><span id="appInfoStatus${appInfo.id}">${appInfo.statusName }</span></td>
 										<td>${appInfo.downloads }</td>
 										<td>${appInfo.versionNo }</td>
-										<td>
-										
-										
+										<td>	
 										<div class="btn-group">
                       <button type="button" class="btn btn-danger">点击操作</button>
                       <button type="button" class="btn btn-danger dropdown-toggle" data-toggle="dropdown" aria-expanded="false">
@@ -188,7 +186,7 @@
                         <li>
                         	<c:choose>
 											<c:when test="${appInfo.status == 2 || appInfo.status == 5}">
-												<a class="saleSwichOpen" saleSwitch="open" appinfoid=${appInfo.id }  appsoftwarename=${appInfo.softwareName } data-toggle="tooltip" data-placement="top" title="" data-original-title="恭喜您，您的审核已经通过，您可以点击上架发布您的APP">上架</a>
+												<a class="saleSwichOpen" saleSwitch="open" appinfoid="${appInfo.id }"  appsoftwarename="${appInfo.softwareName }" data-toggle="tooltip" data-placement="top" title="" data-original-title="恭喜您，您的审核已经通过，您可以点击上架发布您的APP">上架</a>
 											</c:when>
 											<c:when test="${appInfo.status == 4}">
 												<a class="saleSwichClose" saleSwitch="close" appinfoid=${appInfo.id }  appsoftwarename="${appInfo.softwareName }" data-toggle="tooltip" data-placement="top" title="" data-original-title="您可以点击下架来停止发布您的APP，市场将不提供APP的下载">下架</a>
