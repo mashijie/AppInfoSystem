@@ -50,7 +50,7 @@ public class AppController {
 	AppCategoryService appCategoryService;
 	@Resource
 	AppVersionServiceImpl appVersionServiceImpl;
-	
+
 	/**
 	 * 查询列表
 	 */
@@ -261,40 +261,82 @@ public class AppController {
 				.getAppCategoryList(Integer.parseInt(pid));
 		return appList;
 	}
-	
+
 	/**
 	 * 跳转版本添加页面
 	 * 
 	 * @return
 	 */
-	@RequestMapping(value = "appversionadd",method=RequestMethod.GET)
-	public String appversionadd(@RequestParam("id") String id,HttpServletRequest request) {
-		List<AppVersion> appVersions=appVersionServiceImpl.getAppVersionList(Integer.parseInt(id));
-		AppVersion appVerSion=new AppVersion();
+	@RequestMapping(value = "appversionadd", method = RequestMethod.GET)
+	public String appversionadd(@RequestParam("id") String id,
+			HttpServletRequest request) {
+		List<AppVersion> appVersions = appVersionServiceImpl
+				.getAppVersionList(Integer.parseInt(id));
+		AppVersion appVerSion = new AppVersion();
 		appVerSion.setAppId(Integer.parseInt(id));
 		request.setAttribute("appVersionList", appVersions);
-		request.setAttribute("appVersion",appVerSion);
+		request.setAttribute("appVersion", appVerSion);
 		return "developer/appversionadd";
 	}
-	
+
 	/**
 	 * 
 	 * 保存版本信息
+	 * 
 	 * @return
 	 */
-	@RequestMapping(value="addversionsave",method=RequestMethod.POST)
+	@RequestMapping(value = "addversionsave", method = RequestMethod.POST)
 	public String addversionsave(AppVersion appVersion,
 			@RequestParam("a_downloadLink") MultipartFile attach,
-			HttpServletRequest request){
-		System.out.println(appVersion.getVersionNo());
-		System.out.println(appVersion.getVersionInfo());
-		System.out.println(appVersion.getVersionSize());
-		System.out.println(appVersion.getPublishStatus());
-		System.out.println(appVersion.getAppId()+"--------------------");
-		return "";
+			HttpServletRequest request) {
+		String apkFileName = "";
+		String apkLocPath = "";
+		String downLoadLink = "/AppInfoSystem/statics/uploadfiles/";
+		String path = request.getSession().getServletContext()
+				.getRealPath("statics" + File.separator + "uploadfiles");
+		String oldPathName = attach.getOriginalFilename();
+		String prefix = FilenameUtils.getExtension(oldPathName);
+		int fileSize = 500000;
+		if (attach.getSize() > fileSize) {
+			request.setAttribute("fileUploadError",
+					Constants.FILEUPLOAD_ERROR_4);
+			return "developer/appversionadd";
+		} else if (prefix.equals("apk")) {
+			apkLocPath = path + File.separator + oldPathName;
+			apkFileName = oldPathName;
+			downLoadLink += oldPathName;
+			appVersion.setApkFileName(apkFileName);
+			appVersion.setApkLocPath(apkLocPath);
+			appVersion.setDownloadLink(downLoadLink);
+			// 定义文件保存名
+			String fileName = appVersion.getVersionNo() + "-" + oldPathName;
+			// 定义文件 path为路径
+			File targetFile = new File(path, fileName);
+			// 判断文件是否存在，如果不存在，执行mkdirs方法创建文件
+			if (!targetFile.exists()) {
+				targetFile.mkdirs();
+			}
+			try {
+				// 将图片输出到目标文件夹内
+				attach.transferTo(targetFile);
+			} catch (Exception e) {
+				e.printStackTrace();
+				request.setAttribute("fileUploadError",Constants.FILEUPLOAD_ERROR_2);
+				return "developer/appversionadd";
+			}
+			//成功后！处理操作
+			DevUser devUser = (DevUser) request.getSession().getAttribute(
+					Constants.DEV_USER_SESSION);
+			appVersion.setCreatedBy(devUser.getId());
+			appVersion.setCreationDate(new Date());
+			appVersionServiceImpl.addVersion(appVersion);
+			return "redirect:/dev/flatform/app/list";
+		} else {
+			request.setAttribute("fileUploadError",
+					Constants.FILEUPLOAD_ERROR_3);
+			return "developer/appversionadd";
+		}
 	}
-	
-	
 
 	@RequestMapping(value = "{appId}/sale.json")
 	@ResponseBody
